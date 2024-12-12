@@ -64,20 +64,28 @@ tuple<set<State>, bool> causesLoop(int startX, int startY, vector<string> &grid,
     } else if (grid[ny][nx] == '#') {
       // cout << "Change Dir" << endl;
       dir = (dir + 1) % 4;
-      // grid[y][x] = pos[dir];
+      grid[y][x] = pos[dir];
       turn = true;
+      // cout << "&&&&&&&&&&&&&&" << endl;
+      // printVec(grid);
+      // cout << "&&&&&&&&&&&&&&" << endl;
     } else {
       // if (orig) {
-      // grid[ny][nx] = pos[dir];
-      // grid[y][x] = 'X';
+      grid[ny][nx] = pos[dir];
+      grid[y][x] = 'X';
       // }
       x = nx;
       y = ny;
       turn = false;
+      // cout << "$$$$$$$$$$$$$$" << endl;
+      // printVec(grid);
+      // cout << "$$$$$$$$$$$$$$" << endl;
     }
   }
-  // for (const auto &p : visited) {
-  //   printf("X: %i, Y: %i, Direciton: %i\n", p.x, p.y, p.dir);
+  // if (orig) {
+  //   for (const auto &p : visited) {
+  //     printf("X: %i, Y: %i, Direciton: %i\n", p.x, p.y, p.dir);
+  //   }
   // }
   // printVec(grid);
   // cout << ' ' << endl;
@@ -90,9 +98,11 @@ int main() {
   vector<string> grid;
   vector<string> origGrid;
   // ifstream file("demo.txt");
-  ifstream file("input.txt");
+  // ifstream file("input.txt");
   // ifstream file("extra1.txt");
   // ifstream file("extra2.txt");
+  ifstream file("extraN.txt");
+  // ifstream file("extra3.txt");
   string contents((istreambuf_iterator<char>(file)),
                   istreambuf_iterator<char>());
   istringstream ss(contents);
@@ -105,24 +115,25 @@ int main() {
 
   origGrid = grid;
 
-  int startX = 96, startY = 41;
+  // int startX = 96, startY = 41;
   // int startX = 1, startY = 4;
-  // int startX = 1, startY = 3;
+  int startX = 2, startY = 4;
   // int startX = 4, startY = 6;
-  // uniqueLine[to_string(startY) + to_string(startX - 1)] = 1;
+  // int startX = 1, startY = 13;
 
   set<State> origPath;
   set<State> newPath;
   bool loopFound;
   tie(origPath, loopFound) = causesLoop(startX, startY, grid, true);
 
-  printVec(grid);
+  // printVec(grid);
 
   grid = origGrid;
 
   int count = 0;
   for (const auto &p : origPath) {
     // Place a zero here if it isn't present
+    // printf("X: %i, Y: %i, grid item: %c\n", p.x, p.y, grid[p.y][p.x]);
     if (grid[p.y][p.x] == '.') {
       char original = grid[p.y][p.x];
       // grid[p.y][p.x] = 'O'; // Place obstruction
@@ -130,9 +141,10 @@ int main() {
       // printVec(grid);
       // cout << "XXXXXXXXXXXXXXXXXXXXXX" << endl;
       grid[p.y][p.x] = '#'; // Place obstruction
-      string unique = to_string(p.y) + to_string(p.x);
+      string unique = to_string(p.y) + "-" + to_string(p.x);
       uniqueLine.try_emplace(unique, 0);
       if (uniqueLine[unique] == 0) {
+        // printf("GOT IN (%i, %i)\n", p.x, p.y);
         tie(newPath, loopFound) = causesLoop(startX, startY, grid, false);
         if (loopFound) {
           // string unique = to_string(p.y) + to_string(p.x);
@@ -155,10 +167,10 @@ int main() {
         // }
       }
       // grid[p.y][p.x] = original; // Remove obstruction
-      grid = origGrid;
       // cout << "*******************" << endl;
       // printVec(grid);
       // cout << "*******************" << endl;
+      grid = origGrid;
     }
   }
 
