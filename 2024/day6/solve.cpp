@@ -3,6 +3,7 @@
 #include <iostream>
 #include <map>
 #include <sstream>
+#include <string>
 #include <vector>
 
 using namespace std;
@@ -62,17 +63,17 @@ bool objectInFront(char x) {
 bool checkInBounds(char pos, int row, int col, int limit) {
   if ((col >= limit && pos == '>') || (col <= -1 && pos == '<') ||
       (row >= limit && pos == 'v') || (row <= -1 && pos == '^')) {
-    printf("GOING OUT OF BOUNDS: Current Position (%i, %i). Pos: %c\n", row,
-           col, pos);
+    // printf("GOING OUT OF BOUNDS: Current Position (%i, %i). Pos: %c\n", row,
+    //        col, pos);
     return false;
   }
-  printf("InBounds: Current Position (%i, %i). Pos: %c\n", row, col, pos);
-  cout << "(col >= limit && pos == '>')" << (col >= limit && pos == '>')
-       << endl;
-  cout << "(col <= 0 && pos == '<')" << (col <= 0 && pos == '<') << endl;
-  cout << "(row >= limit && pos == 'v')" << (row >= limit && pos == 'v')
-       << endl;
-  cout << "(row <= 0 && pos == '^')" << (row <= 0 && pos == '^') << endl;
+  // printf("InBounds: Current Position (%i, %i). Pos: %c\n", row, col, pos);
+  // cout << "(col >= limit && pos == '>')" << (col >= limit && pos == '>')
+  //      << endl;
+  // cout << "(col <= 0 && pos == '<')" << (col <= 0 && pos == '<') << endl;
+  // cout << "(row >= limit && pos == 'v')" << (row >= limit && pos == 'v')
+  //      << endl;
+  // cout << "(row <= 0 && pos == '^')" << (row <= 0 && pos == '^') << endl;
   return true;
 }
 void printMat(vector<vector<char>> gameMap) {
@@ -109,12 +110,164 @@ char directionChange(char currentChar) {
   return charMap[currentChar];
 }
 
+pair<bool, int> grabColUp(vector<vector<char>> currentMap, int row, int col,
+                          char ref) {
+  for (int i = 0; i < row; i++) {
+    char pos = currentMap[i][col];
+    // if (pos == '#' || pos == '^') {
+    if (pos == ref) {
+      return make_pair(true, i);
+    }
+  }
+  return make_pair(false, 0);
+}
+
+pair<bool, int> grabColDown(vector<vector<char>> currentMap, int row, int col,
+                            char ref) {
+  for (int i = row; i < currentMap.size(); i++) {
+    char pos = currentMap[i][col];
+    // if (pos == '#' || pos == 'v') {
+    if (pos == ref) {
+      return make_pair(true, i);
+    }
+  }
+  return make_pair(false, 0);
+}
+
+pair<bool, int> grabRowRight(vector<vector<char>> currentMap, int row, int col,
+                             char ref) {
+  for (int i = col; i < currentMap.size(); i++) {
+    char pos = currentMap[row][i];
+    // if (pos == '#' || pos == '>') {
+    if (pos == ref) {
+      return make_pair(true, i);
+    }
+  }
+  return make_pair(false, 0);
+}
+
+pair<bool, int> grabRowLeft(vector<vector<char>> currentMap, int row, int col,
+                            char ref) {
+  for (int i = 0; i < col; i++) {
+    char pos = currentMap[row][i];
+    // if (pos == '#' || pos == '<') {
+    if (pos == ref) {
+      return make_pair(true, i);
+    }
+  }
+  return make_pair(false, 0);
+}
+
+// Logic for Part 2
+// At each step we evaluate if there is a # directly above/below, to the
+// right/left of that one (if true) then directly below/above the right/left
+// one (if true), then if inline with guard (if true) count as possible
+// obstructin position We could store for debuggin purposes in a hashmap
+
+bool checkSquare(vector<vector<char>> currentMap, int row, int col) {
+  // take in our map after a step compute
+  bool loop = false;
+  char pos = currentMap[row][col];
+  pair<bool, int> upCheck, downCheck, rightCheck, leftCheck;
+
+  if (pos == '<') {
+    // If heading to the left check up, right, down, and inline
+    upCheck = grabColUp(currentMap, row, col, '#');
+    if (upCheck.first) {
+      // Check that the right has a stop as well (move up one as we wouldn't
+      // be on exactly that line)
+      rightCheck = grabRowRight(currentMap, upCheck.second + 1, col, '#');
+      if (rightCheck.first) {
+        downCheck = grabColDown(currentMap, upCheck.second + 1,
+                                rightCheck.second - 1, '#');
+        if (downCheck.first) {
+          leftCheck = grabRowLeft(currentMap, downCheck.second - 1,
+                                  rightCheck.second - 1, '<');
+          if (leftCheck.first) {
+            return true;
+          }
+        }
+      }
+    }
+  } else if (pos == '>') {
+    downCheck = grabColDown(currentMap, row, col, '#');
+    if (downCheck.first) {
+      leftCheck = grabRowLeft(currentMap, downCheck.second - 1, col, '#');
+      if (leftCheck.first) {
+        upCheck = grabColUp(currentMap, downCheck.second - 1,
+                            leftCheck.second + 1, '#');
+        if (upCheck.first) {
+          rightCheck = grabRowRight(currentMap, upCheck.second + 1,
+                                    leftCheck.second + 1, '>');
+        }
+        if (rightCheck.first) {
+          return true;
+        }
+      }
+    }
+  } else if (pos == '^') {
+    rightCheck = grabRowRight(currentMap, row, col, '#');
+    if (rightCheck.first) {
+      downCheck = grabColDown(currentMap, row, rightCheck.second - 1, '#');
+      if (downCheck.first) {
+        leftCheck = grabRowLeft(currentMap, downCheck.second - 1,
+                                rightCheck.second - 1, '#');
+        if (leftCheck.first) {
+          upCheck = grabColUp(currentMap, downCheck.second + 1,
+                              leftCheck.second + 1, '^');
+          if (upCheck.first) {
+            return true;
+          }
+        }
+      }
+    }
+  } else { // down facing
+    leftCheck = grabRowLeft(currentMap, row, col, '#');
+    if (leftCheck.first) {
+      upCheck = grabColUp(currentMap, row, leftCheck.second + 1, '#');
+      if (upCheck.first) {
+        rightCheck = grabRowRight(currentMap, upCheck.second + 1,
+                                  leftCheck.second + 1, '#');
+        if (rightCheck.first) {
+          downCheck = grabColDown(currentMap, upCheck.second + 1,
+                                  rightCheck.second - 1, 'v');
+          if (downCheck.first) {
+            printf("initial (%i,%i) -> left (%i,%i) -> up (%i,%i) -> down "
+                   "(%i,%i)\n",
+                   row, col, row, leftCheck.second + 1, upCheck.second + 1,
+                   leftCheck.second + 1, upCheck.second + 1,
+                   rightCheck.second - 1);
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return loop;
+}
+
+pair<map<string, int>, int> addPos(map<string, int> inMap, int x, int y) {
+  string row = to_string(x);
+  string col = to_string(y);
+  string key = '(' + row + ',' + col + ')';
+  inMap.try_emplace(key, 0);
+
+  inMap[key]++;
+  return make_pair(inMap, inMap[key]);
+}
+
+void printMap(map<string, int> x) {
+  for (const auto &c : x) {
+    cout << c.first << " : " << c.second << endl;
+  }
+}
+
 int main() {
   // generate a hash
-  int N = 130;
-  // int N = 10;
-  // vector<vector<char>> mat = createHash("./demo.txt", N);
-  vector<vector<char>> mat = createHash("./input.txt", N);
+  // int N = 130;
+  int N = 10;
+  vector<vector<char>> mat = createHash("./demo.txt", N);
+  // vector<vector<char>> mat = createHash("./input.txt", N);
 
   // printMat(mat);
 
@@ -131,13 +284,20 @@ int main() {
   bool front;
   bool inBound;
   int count = 0;
+  bool makeLoop;
+  pair<map<string, int>, int> extraLoop;
   // cout << row << " " << col << endl;
+  //
+  printMat(mat);
+  cout << "----------------" << endl;
+  extraLoop = addPos(extraLoop.first, row, col);
 
   inBound = checkInBounds(pos.second, row, col, N);
   // Check position and move
   while (inBound) {
     // Check direction and object infront
-    printf("Current Pos: (%i, %i) and Position: %c\n", row, col, mat[row][col]);
+    // printf("Current Pos: (%i, %i) and Position: %c\n", row, col,
+    // mat[row][col]);
     if (mat[row][col] == '>') {
       //  Upate next step
       col++;
@@ -161,12 +321,40 @@ int main() {
       if (!inBound) {
         break;
       }
+      extraLoop = addPos(extraLoop.first, row, col);
+      if (extraLoop.second > 1) {
+        count++;
+      }
       mat[row][col] = mat[prev[0]][prev[1]];
-      mat[prev[0]][prev[1]] = '*';
+      if (extraLoop.second > 1) {
+        if (mat[row][col] == '>') {
+          //  Upate next step
+          mat[prev[0]][prev[1] + 1] = 'O';
+        } else if (mat[row][col] == '<') {
+          mat[prev[0]][prev[1] - 1] = 'O';
+        } else if (mat[row][col] == '^') {
+          mat[prev[0] + 1][prev[1]] = 'O';
+        } else {
+          mat[prev[0] - 1][prev[1]] = 'O';
+        }
+      } else {
+        mat[prev[0]][prev[1]] = '*'; // .
+      }
+
+      // mat[prev[0]][prev[1]] = '*';
       // After update Image
-      cout << "---------- Step ----------" << endl;
-      printMat(mat);
-      cout << "  " << endl;
+      // cout << "---------- Step ----------" << endl;
+      // printMat(mat);
+      // cout << "  " << endl;
+      // printf("Before a step we are at (%i, %i)\n", row, col);
+      // makeLoop = checkSquare(mat, row, col);
+      // cout << "After makeLoop" << endl;
+      // if (makeLoop) {
+      //   cout << "---------- Step ----------" << endl;
+      //   printMat(mat);
+      //   cout << "  " << endl;
+      //   count++;
+      // }
       // update prev
       prev[0] = row;
       prev[1] = col;
@@ -175,12 +363,15 @@ int main() {
       mat[prev[0]][prev[1]] = directionChange(mat[prev[0]][prev[1]]);
       row = prev[0];
       col = prev[1];
-      printMat(mat);
+      // printMat(mat);
     }
   }
+  // printMap(extraLoop.first);
   printMat(mat);
-  count = countUniqueSteps(mat) + 1;
-  printf("Number of steps our Guard takes: %i\n", count);
+  count += 2;
+  // count = countUniqueSteps(mat) + 1;
+  // printf("Number of steps our Guard takes: %i\n", count);
+  printf("Number of Unique Loop Locations for our Guard is: %i\n", count);
 
   return 0;
 }

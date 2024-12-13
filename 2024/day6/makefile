@@ -1,6 +1,6 @@
 CXX=g++
 RM=rm -f
-OBJS=solve.cpp
+OBJS=mypartb.cpp
 
 all: searchxmas
 	./solve
